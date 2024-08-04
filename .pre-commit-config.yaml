@@ -6,7 +6,6 @@ repos:
     hooks:
       - id: check-merge-conflict
       - id: check-vcs-permalinks
-      - id: end-of-file-fixer
   - repo: local
     hooks:
       - id: cargo-fmt
