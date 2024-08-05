@@ -102,7 +102,7 @@ fn main() {
 }
 
 #[cfg(test)]
-mod tests_multiple_file_reader {
+mod multiple_file_reader {
     use super::*;
     use std::io::BufRead;
     use std::io::BufReader;
@@ -118,7 +118,7 @@ mod tests_multiple_file_reader {
     }
 
     #[test]
-    fn test_one_file() {
+    fn one_file() {
         let multi_file_reader =
             MultipleFileReader::new(vec![String::from("testdata/file1")]).unwrap();
         let lines: Vec<String> = BufReader::new(multi_file_reader)
@@ -134,7 +134,7 @@ mod tests_multiple_file_reader {
     }
 
     #[test]
-    fn test_multiple_files() {
+    fn multiple_files() {
         let filenames = vec![
             String::from("testdata/file1"),
             String::from("testdata/file2"),
@@ -160,7 +160,7 @@ mod tests_multiple_file_reader {
     }
 
     #[test]
-    fn test_open_fails() {
+    fn open_fails() {
         let filenames = vec![
             String::from("testdata/file1"),
             String::from("testdata/file_does_not_exist"),
@@ -171,7 +171,7 @@ mod tests_multiple_file_reader {
     }
 
     #[test]
-    fn test_read_fails() {
+    fn read_fails() {
         // We construct a filehandle that errors followed by a valid filehandle.
         // Reads should consistently fail rather than moving on to the valid filehandle.
         let filehandles: Vec<Box<dyn Read>> = vec![
@@ -187,19 +187,19 @@ mod tests_multiple_file_reader {
 }
 
 #[cfg(test)]
-mod tests_stdin_or_files {
+mod stdin_or_files {
     use super::*;
     use std::io::BufRead;
     use std::io::BufReader;
 
     #[test]
-    fn test_no_files() {
+    fn no_files() {
         assert!(StdinOrFiles::new(vec![]).is_ok());
         // TODO: what can I test here?
     }
 
     #[test]
-    fn test_two_files() {
+    fn two_files() {
         let fh = StdinOrFiles::new(vec![
             String::from("testdata/file1"),
             String::from("testdata/file2"),
@@ -220,7 +220,7 @@ mod tests_stdin_or_files {
     }
 
     #[test]
-    fn test_open_fails() {
+    fn open_fails() {
         let filenames = vec![
             String::from("testdata/file1"),
             String::from("testdata/file_does_not_exist"),
@@ -231,11 +231,11 @@ mod tests_stdin_or_files {
 }
 
 #[cfg(test)]
-mod tests_parents_of_filename {
+mod parents_of_filename {
     use super::*;
 
     #[test]
-    fn test_all_parents() {
+    fn all_parents() {
         let expected = vec![
             String::from("/usr"),
             String::from("/usr/bin"),
@@ -245,7 +245,7 @@ mod tests_parents_of_filename {
     }
 
     #[test]
-    fn test_skipping() {
+    fn skipping() {
         let expected = vec![String::from("/usr/bin"), String::from("/usr/bin/cat")];
         assert_eq!(expected, parents_of_filename("/usr/bin/cat", 1));
     }
