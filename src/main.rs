@@ -59,12 +59,43 @@ impl Read for MultipleFileReader {
     }
 }
 
+/// Returns the lines from a MultipleFileReader (if filenames are provided) or stdin if no
+/// filenames are provided.
+struct StdinOrFiles {
+    reader: Box<dyn Read>,
+}
+
+impl StdinOrFiles {
+    /// Initialises and returns a StdinOrFiles.
+    ///
+    /// If filenames are provided, creates and wraps a MultipleFileReader to read all the files.
+    /// Otherwise creates and wraps an std:io::stdin().
+    fn new(filenames: Vec<String>) -> Result<Self, std::io::Error> {
+        if filenames.is_empty() {
+            Ok(Self {
+                reader: Box::new(std::io::stdin()),
+            })
+        } else {
+            Ok(Self {
+                reader: Box::new(MultipleFileReader::new(filenames)?),
+            })
+        }
+    }
+}
+
+/// Implements [std::io::Read] for StdinOrFiles.
+impl Read for StdinOrFiles {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        self.reader.read(buf)
+    }
+}
+
 fn main() {
     println!("Hello, world!");
 }
 
 #[cfg(test)]
-mod tests {
+mod tests_multiple_file_reader {
     use super::*;
     use std::io::BufRead;
     use std::io::BufReader;
@@ -145,5 +176,49 @@ mod tests {
         assert!(multi_file_reader.read(&mut buffer).is_err());
         assert!(multi_file_reader.read(&mut buffer).is_err());
         assert!(multi_file_reader.read(&mut buffer).is_err());
+    }
+}
+
+#[cfg(test)]
+mod tests_stdin_or_files {
+    use super::*;
+    use std::io::BufRead;
+    use std::io::BufReader;
+
+    #[test]
+    fn test_no_files() {
+        assert!(StdinOrFiles::new(vec![]).is_ok());
+        // TODO: what can I test here?
+    }
+
+    #[test]
+    fn test_two_files() {
+        let fh = StdinOrFiles::new(vec![
+            String::from("testdata/file1"),
+            String::from("testdata/file2"),
+        ])
+        .unwrap();
+        let lines: Vec<String> = BufReader::new(fh).lines().map(|l| l.unwrap()).collect();
+        let expected = vec![
+            String::from("This is file 1."),
+            String::from(""),
+            String::from("It is not very interesting."),
+            String::from("File 2 isn't really any better than file 1."),
+            String::from(""),
+            String::from(""),
+            String::from("It has more blank lines.  Including a trailing blank line."),
+            String::from(""),
+        ];
+        assert_eq!(expected, lines);
+    }
+
+    #[test]
+    fn test_open_fails() {
+        let filenames = vec![
+            String::from("testdata/file1"),
+            String::from("testdata/file_does_not_exist"),
+            String::from("testdata/file3"),
+        ];
+        assert!(StdinOrFiles::new(filenames).is_err());
     }
 }
