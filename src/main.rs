@@ -1,9 +1,12 @@
 #![allow(dead_code)]
 use clap::Parser;
+use std::io::BufRead;
+use std::io::BufReader;
+use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
 
-#[derive(Debug, Default, Parser)]
+#[derive(Debug, Parser)]
 #[command(
     version,
     about,
@@ -18,8 +21,21 @@ struct Flags {
         help = "Do not print the first SKIP components of each path"
     )]
     skip: usize, // TODO: how do I make test coverage realise that I've used this?
+
     #[arg(help = "If zero paths are provided, reads paths from stdin")]
     paths: Option<Vec<String>>,
+}
+
+struct Options {
+    stdin_reader: Box<dyn Read>,
+}
+
+impl Options {
+    fn new() -> Self {
+        Self {
+            stdin_reader: Box::new(std::io::stdin()),
+        }
+    }
 }
 
 fn parents_of_filename(filename: &str, skip: usize) -> Vec<String> {
@@ -34,8 +50,23 @@ fn parents_of_filename(filename: &str, skip: usize) -> Vec<String> {
     result
 }
 
+fn realmain(options: Options, flags: Flags) -> String {
+    let paths = match flags.paths {
+        None => BufReader::new(options.stdin_reader)
+            .lines()
+            .map(|line| line.unwrap())
+            .collect::<Vec<String>>(),
+        Some(paths) => paths,
+    };
+    paths
+        .iter()
+        .flat_map(|path| parents_of_filename(path, flags.skip))
+        .collect::<Vec<String>>()
+        .join("\n")
+}
+
 fn main() {
-    println!("Hello, world!");
+    println!("{}", realmain(Options::new(), Flags::parse()));
 }
 
 #[cfg(test)]
@@ -75,5 +106,49 @@ mod clap_test {
         let flags = Flags::parse_from(vec!["argv0", "--skip", "3", "/usr/bin/cat"]);
         assert_eq!(3, flags.skip);
         assert_eq!(Some(vec![String::from("/usr/bin/cat")]), flags.paths);
+    }
+}
+
+#[cfg(test)]
+mod options {
+    use super::*;
+
+    #[test]
+    fn new() {
+        // What can I check here?
+        let _options = Options::new();
+    }
+}
+
+#[cfg(test)]
+mod realmain {
+    use super::*;
+
+    #[test]
+    fn paths_given() {
+        let flags = Flags {
+            paths: Some(vec![
+                String::from("/usr/bin/tail"),
+                String::from("/tmp/foo/bar"),
+            ]),
+            skip: 1,
+        };
+        let expected = String::from("/usr/bin\n/usr/bin/tail\n/tmp/foo\n/tmp/foo/bar");
+        assert_eq!(expected, realmain(Options::new(), flags));
+    }
+
+    #[test]
+    fn no_paths_given() {
+        use std::io::Cursor;
+        let flags = Flags {
+            paths: None,
+            skip: 1,
+        };
+        let expected = String::from("/var/run\n/var/run/asdf\n/tmp/foo\n/tmp/foo/bar");
+        let cursor = Cursor::new(String::from("/var/run/asdf\n/tmp/foo/bar"));
+        let options = Options {
+            stdin_reader: Box::new(cursor),
+        };
+        assert_eq!(expected, realmain(options, flags));
     }
 }
