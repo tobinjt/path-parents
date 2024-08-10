@@ -17,10 +17,11 @@ struct Flags {
     #[arg(
         short,
         long,
-        default_value_t = 0,
         help = "Do not print the first SKIP components of each path"
     )]
-    skip: usize, // TODO: how do I make test coverage realise that I've used this?
+    // This is Option<usize> rather than usize because code coverage shows this as covered when I
+    // use Option.
+    skip: Option<usize>,
 
     #[arg(help = "If zero paths are provided, reads paths from stdin")]
     paths: Option<Vec<String>>,
@@ -60,7 +61,7 @@ fn realmain(options: Options, flags: Flags) -> String {
     };
     paths
         .iter()
-        .flat_map(|path| parents_of_filename(path, flags.skip))
+        .flat_map(|path| parents_of_filename(path, flags.skip.unwrap_or_default()))
         .collect::<Vec<String>>()
         .join("\n")
 }
@@ -104,8 +105,12 @@ mod clap_test {
     fn parse_args() {
         // Checks that I've configured the parser correctly.
         let flags = Flags::parse_from(vec!["argv0", "--skip", "3", "/usr/bin/cat"]);
-        assert_eq!(3, flags.skip);
+        assert_eq!(Some(3), flags.skip);
         assert_eq!(Some(vec![String::from("/usr/bin/cat")]), flags.paths);
+
+        assert!(Flags::command()
+            .try_get_matches_from(vec!["argv0", "--skip", "/usr/bin/cat"])
+            .is_err());
     }
 }
 
@@ -131,7 +136,7 @@ mod realmain {
                 String::from("/usr/bin/tail"),
                 String::from("/tmp/foo/bar"),
             ]),
-            skip: 1,
+            skip: Some(1),
         };
         let expected = String::from("/usr/bin\n/usr/bin/tail\n/tmp/foo\n/tmp/foo/bar");
         assert_eq!(expected, realmain(Options::new(), flags));
@@ -142,7 +147,7 @@ mod realmain {
         use std::io::Cursor;
         let flags = Flags {
             paths: None,
-            skip: 1,
+            skip: Some(1),
         };
         let expected = String::from("/var/run\n/var/run/asdf\n/tmp/foo\n/tmp/foo/bar");
         let cursor = Cursor::new(String::from("/var/run/asdf\n/tmp/foo/bar"));
