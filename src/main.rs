@@ -108,9 +108,11 @@ mod clap_test {
         assert_eq!(Some(3), flags.skip);
         assert_eq!(Some(vec![String::from("/usr/bin/cat")]), flags.paths);
 
-        assert!(Flags::command()
-            .try_get_matches_from(vec!["argv0", "--skip", "/usr/bin/cat"])
-            .is_err());
+        assert!(
+            Flags::command()
+                .try_get_matches_from(vec!["argv0", "--skip", "/usr/bin/cat"])
+                .is_err()
+        );
     }
 }
 
