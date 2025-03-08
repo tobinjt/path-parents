@@ -14,6 +14,9 @@ Rust. When Rust is installed `path-parents` can be installed with:
 cargo install path-parents
 ```
 
+There are no pre-built binaries available, contributions to provide binaries are
+welcome.
+
 ## Usage
 
 ```shell
@@ -40,7 +43,7 @@ $ (echo /usr/bin/cat; echo /usr/bin/cut ) | path-parents
 /usr/bin/cut
 
 # Note that this will not work as you hope, and path-parents doesn't try to
-# prevent you doing this.
+# prevent you doing this because filenames can contain spaces.
 $ echo /usr/bin/cat /usr/bin/cut | path-parents
 /usr
 /usr/bin
@@ -52,5 +55,5 @@ $ echo /usr/bin/cat /usr/bin/cut | path-parents
 
 ## Licence
 
-Licensed under the Apache 2.0 licence, see the LICENSE file accompanying the
-software.
+Licensed under the Apache 2.0 licence, see the [`LICENSE`](LICENSE) file
+accompanying the software.
