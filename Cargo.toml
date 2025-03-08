@@ -11,7 +11,7 @@ description = """\
   """
 keywords = ["cli", "file"]
 license-file = "LICENSE"
-repository = "https://github.com/tobinjt/colx"
+repository = "https://github.com/tobinjt/path-parents"
 # keep-sorted end
 
 [dependencies]
