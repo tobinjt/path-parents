@@ -1,13 +1,13 @@
 [package]
 name = "path-parents"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2024"
 
 # keep-sorted start block=yes
 categories = ["command-line-utilities"]
 description = """\
-  `path-parents` prints all the parents of each path given, optionally \
-  skipping parents up to the length specified by `--skip`.\
+  Prints all the parents of each path given, optionally skipping parents up to \
+  the length specified by --skip.\
   """
 keywords = ["cli", "file"]
 license-file = "LICENSE"
