@@ -1,6 +1,6 @@
 [package]
 name = "path-parents"
-version = "1.0.2"
+version = "1.0.3"
 edition = "2024"
 
 # keep-sorted start block=yes
@@ -10,7 +10,7 @@ description = """\
   the length specified by --skip.\
   """
 keywords = ["cli", "file"]
-license-file = "LICENSE"
+license = "Apache-2.0"
 repository = "https://github.com/tobinjt/path-parents"
 # keep-sorted end
 
