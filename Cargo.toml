@@ -1,6 +1,6 @@
 [package]
 name = "path-parents"
-version = "1.0.3"
+version = "1.0.4"
 edition = "2024"
 
 # keep-sorted start block=yes
@@ -15,4 +15,4 @@ repository = "https://github.com/tobinjt/path-parents"
 # keep-sorted end
 
 [dependencies]
-clap = { version = "4.5.13", features = ["derive"] }
+clap = { version = "4.5.54", features = ["derive"] }
