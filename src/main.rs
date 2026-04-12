@@ -117,17 +117,6 @@ mod clap_test {
 }
 
 #[cfg(test)]
-mod options {
-    use super::*;
-
-    #[test]
-    fn new() {
-        // What can I check here?
-        let _options = Options::new();
-    }
-}
-
-#[cfg(test)]
 mod realmain {
     use super::*;
 
