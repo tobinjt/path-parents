@@ -39,13 +39,13 @@ impl Options {
     }
 }
 
-fn parents_of_filename(filename: &str, skip: usize) -> Vec<String> {
+fn parents_of_filename(filename: &Path, skip: usize) -> Vec<String> {
     let mut result: Vec<String> = vec![];
     let mut path = PathBuf::new();
-    for (i, component) in Path::new(&filename).components().enumerate() {
+    for (i, component) in filename.components().enumerate() {
         path.push(component);
         if i > skip {
-            result.push(path.as_path().to_str().unwrap().to_string());
+            result.push(path.to_string_lossy().into_owned());
         }
     }
     result
@@ -61,7 +61,7 @@ fn realmain(options: Options, flags: Flags) -> String {
     };
     paths
         .iter()
-        .flat_map(|path| parents_of_filename(path, flags.skip.unwrap_or_default()))
+        .flat_map(|path| parents_of_filename(Path::new(path), flags.skip.unwrap_or_default()))
         .collect::<Vec<String>>()
         .join("\n")
 }
@@ -81,13 +81,34 @@ mod parents_of_filename {
             String::from("/usr/bin"),
             String::from("/usr/bin/cat"),
         ];
-        assert_eq!(expected, parents_of_filename("/usr/bin/cat", 0));
+        assert_eq!(expected, parents_of_filename(Path::new("/usr/bin/cat"), 0));
     }
 
     #[test]
     fn skipping() {
         let expected = vec![String::from("/usr/bin"), String::from("/usr/bin/cat")];
-        assert_eq!(expected, parents_of_filename("/usr/bin/cat", 1));
+        assert_eq!(expected, parents_of_filename(Path::new("/usr/bin/cat"), 1));
+    }
+
+    #[test]
+    fn invalid_utf8_path() {
+        use std::ffi::OsStr;
+        #[cfg(unix)]
+        use std::os::unix::ffi::OsStrExt;
+
+        #[cfg(unix)]
+        {
+            let invalid_utf8: &[u8] = b"/foo/bar/\xFFbaz";
+            let os_str = OsStr::from_bytes(invalid_utf8);
+            let path = Path::new(os_str);
+
+            let expected = vec![
+                String::from("/foo"),
+                String::from("/foo/bar"),
+                String::from("/foo/bar/\u{FFFD}baz"),
+            ];
+            assert_eq!(expected, parents_of_filename(path, 0));
+        }
     }
 
     #[test]
