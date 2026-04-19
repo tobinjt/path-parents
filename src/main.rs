@@ -89,6 +89,12 @@ mod parents_of_filename {
         let expected = vec![String::from("/usr/bin"), String::from("/usr/bin/cat")];
         assert_eq!(expected, parents_of_filename("/usr/bin/cat", 1));
     }
+
+    #[test]
+    fn skip_larger_than_path_length() {
+        let expected: Vec<String> = vec![];
+        assert_eq!(expected, parents_of_filename("/usr/bin/cat", 10));
+    }
 }
 
 #[cfg(test)]
