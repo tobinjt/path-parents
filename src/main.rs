@@ -45,7 +45,7 @@ fn parents_of_filename(filename: &str, skip: usize) -> Vec<String> {
     for (i, component) in Path::new(&filename).components().enumerate() {
         path.push(component);
         if i > skip {
-            result.push(path.as_path().to_str().unwrap().to_string());
+            result.push(path.to_string_lossy().into_owned());
         }
     }
     result
