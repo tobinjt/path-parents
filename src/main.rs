@@ -54,7 +54,7 @@ fn realmain(options: Options, flags: Flags) -> String {
     let paths = match flags.paths {
         None => BufReader::new(options.stdin_reader)
             .lines()
-            .filter_map(Result::ok)
+            .map_while(Result::ok)
             .collect::<Vec<String>>(),
         Some(paths) => paths,
     };
@@ -113,7 +113,7 @@ mod parents_of_filename {
     #[test]
     fn skip_larger_than_path_length() {
         let expected: Vec<String> = vec![];
-        assert_eq!(expected, parents_of_filename("/usr/bin/cat", 10));
+        assert_eq!(expected, parents_of_filename(Path::new("/usr/bin/cat"), 10));
     }
 }
 
