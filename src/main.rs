@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use clap::Parser;
 use std::io::BufRead;
 use std::io::BufReader;
@@ -55,7 +54,7 @@ fn realmain(options: Options, flags: Flags) -> String {
     let paths = match flags.paths {
         None => BufReader::new(options.stdin_reader)
             .lines()
-            .map(|line| line.unwrap())
+            .filter_map(Result::ok)
             .collect::<Vec<String>>(),
         Some(paths) => paths,
     };
