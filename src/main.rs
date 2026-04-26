@@ -51,23 +51,32 @@ fn parents_of_filename(filename: &str, skip: usize) -> Vec<String> {
     result
 }
 
-fn realmain(options: Options, flags: Flags) -> String {
+fn realmain(options: Options, flags: Flags) -> std::io::Result<String> {
     let paths = match flags.paths {
         None => BufReader::new(options.stdin_reader)
             .lines()
-            .map(|line| line.unwrap())
-            .collect::<Vec<String>>(),
+            .collect::<std::io::Result<Vec<String>>>()?,
         Some(paths) => paths,
     };
-    paths
+    Ok(paths
         .iter()
         .flat_map(|path| parents_of_filename(path, flags.skip.unwrap_or_default()))
         .collect::<Vec<String>>()
-        .join("\n")
+        .join("\n"))
 }
 
 fn main() {
-    println!("{}", realmain(Options::new(), Flags::parse()));
+    match realmain(Options::new(), Flags::parse()) {
+        Ok(output) => {
+            if !output.is_empty() {
+                println!("{output}");
+            }
+        }
+        Err(e) => {
+            eprintln!("Error: {e}");
+            std::process::exit(1);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -130,7 +139,7 @@ mod realmain {
             skip: Some(1),
         };
         let expected = String::from("/usr/bin\n/usr/bin/tail\n/tmp/foo\n/tmp/foo/bar");
-        assert_eq!(expected, realmain(Options::new(), flags));
+        assert_eq!(expected, realmain(Options::new(), flags).unwrap());
     }
 
     #[test]
@@ -145,6 +154,26 @@ mod realmain {
         let options = Options {
             stdin_reader: Box::new(cursor),
         };
-        assert_eq!(expected, realmain(options, flags));
+        assert_eq!(expected, realmain(options, flags).unwrap());
+    }
+
+    #[test]
+    fn invalid_utf8_stdin() {
+        use std::io::Cursor;
+        let flags = Flags {
+            paths: None,
+            skip: None,
+        };
+        let data = vec![0, 159, 146, 150]; // Invalid UTF-8
+        let cursor = Cursor::new(data);
+        let options = Options {
+            stdin_reader: Box::new(cursor),
+        };
+        let result = realmain(options, flags);
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err().kind(),
+            std::io::ErrorKind::InvalidData
+        );
     }
 }
