@@ -39,19 +39,20 @@ impl Options {
     }
 }
 
-fn parents_of_filename(filename: &str, skip: usize) -> Vec<String> {
+fn parents_of_filename(filename: &Path, skip: usize) -> Vec<String> {
     let mut result: Vec<String> = vec![];
     let mut path = PathBuf::new();
-    for (i, component) in Path::new(&filename).components().enumerate() {
+    for (i, component) in filename.components().enumerate() {
         path.push(component);
         if i > skip {
-            result.push(path.as_path().to_str().unwrap().to_string());
+            result.push(path.to_string_lossy().into_owned());
         }
     }
     result
 }
 
 fn realmain(options: Options, flags: Flags) -> std::io::Result<String> {
+    let skip = flags.skip.unwrap_or_default();
     let paths = match flags.paths {
         None => BufReader::new(options.stdin_reader)
             .lines()
@@ -60,7 +61,7 @@ fn realmain(options: Options, flags: Flags) -> std::io::Result<String> {
     };
     Ok(paths
         .iter()
-        .flat_map(|path| parents_of_filename(path, flags.skip.unwrap_or_default()))
+        .flat_map(|path| parents_of_filename(Path::new(path), skip))
         .collect::<Vec<String>>()
         .join("\n"))
 }
@@ -69,11 +70,11 @@ fn main() {
     match realmain(Options::new(), Flags::parse()) {
         Ok(output) => {
             if !output.is_empty() {
-                println!("{output}");
+                println!("{}", output);
             }
         }
         Err(e) => {
-            eprintln!("Error: {e}");
+            eprintln!("Error: {}", e);
             std::process::exit(1);
         }
     }
@@ -90,13 +91,46 @@ mod parents_of_filename {
             String::from("/usr/bin"),
             String::from("/usr/bin/cat"),
         ];
-        assert_eq!(expected, parents_of_filename("/usr/bin/cat", 0));
+        assert_eq!(expected, parents_of_filename(Path::new("/usr/bin/cat"), 0));
     }
 
     #[test]
     fn skipping() {
         let expected = vec![String::from("/usr/bin"), String::from("/usr/bin/cat")];
-        assert_eq!(expected, parents_of_filename("/usr/bin/cat", 1));
+        assert_eq!(expected, parents_of_filename(Path::new("/usr/bin/cat"), 1));
+    }
+
+    #[test]
+    fn invalid_utf8_path() {
+        use std::ffi::OsStr;
+        #[cfg(unix)]
+        use std::os::unix::ffi::OsStrExt;
+
+        #[cfg(unix)]
+        {
+            let invalid_utf8: &[u8] = b"/foo/bar/\xFFbaz";
+            let os_str = OsStr::from_bytes(invalid_utf8);
+            let path = Path::new(os_str);
+
+            let expected = vec![
+                String::from("/foo"),
+                String::from("/foo/bar"),
+                String::from("/foo/bar/\u{FFFD}baz"),
+            ];
+            assert_eq!(expected, parents_of_filename(path, 0));
+        }
+    }
+
+    #[test]
+    fn skip_larger_than_path_length() {
+        let expected: Vec<String> = vec![];
+        assert_eq!(expected, parents_of_filename(Path::new("/usr/bin/cat"), 10));
+    }
+
+    #[test]
+    fn empty_filename() {
+        let expected: Vec<String> = vec![];
+        assert_eq!(expected, parents_of_filename(Path::new(""), 0));
     }
 }
 
@@ -175,5 +209,27 @@ mod realmain {
             result.unwrap_err().kind(),
             std::io::ErrorKind::InvalidData
         );
+    }
+
+    #[test]
+    fn stdin_error() {
+        use std::io::{Error, ErrorKind, Read};
+        struct ErrorReader;
+        impl Read for ErrorReader {
+            fn read(&mut self, _buf: &mut [u8]) -> std::io::Result<usize> {
+                Err(Error::new(ErrorKind::Other, "mock stdin error"))
+            }
+        }
+
+        let flags = Flags {
+            paths: None,
+            skip: None,
+        };
+        let options = Options {
+            stdin_reader: Box::new(ErrorReader),
+        };
+        let result = realmain(options, flags);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().to_string(), "mock stdin error");
     }
 }
