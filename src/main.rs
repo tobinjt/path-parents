@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use clap::Parser;
 use std::io::BufRead;
 use std::io::BufReader;
@@ -51,23 +50,29 @@ fn parents_of_filename(filename: &Path, skip: usize) -> Vec<String> {
     result
 }
 
-fn realmain(options: Options, flags: Flags) -> String {
+fn realmain(options: Options, flags: Flags) -> Result<String, std::io::Error> {
+    let skip = flags.skip.unwrap_or_default();
     let paths = match flags.paths {
         None => BufReader::new(options.stdin_reader)
             .lines()
-            .map(|line| line.unwrap())
-            .collect::<Vec<String>>(),
+            .collect::<Result<Vec<String>, std::io::Error>>()?,
         Some(paths) => paths,
     };
-    paths
+    Ok(paths
         .iter()
-        .flat_map(|path| parents_of_filename(Path::new(path), flags.skip.unwrap_or_default()))
+        .flat_map(|path| parents_of_filename(Path::new(path), skip))
         .collect::<Vec<String>>()
-        .join("\n")
+        .join("\n"))
 }
 
 fn main() {
-    println!("{}", realmain(Options::new(), Flags::parse()));
+    match realmain(Options::new(), Flags::parse()) {
+        Ok(output) => println!("{}", output),
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            std::process::exit(1);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -157,7 +162,7 @@ mod realmain {
             skip: Some(1),
         };
         let expected = String::from("/usr/bin\n/usr/bin/tail\n/tmp/foo\n/tmp/foo/bar");
-        assert_eq!(expected, realmain(Options::new(), flags));
+        assert_eq!(expected, realmain(Options::new(), flags).unwrap());
     }
 
     #[test]
@@ -172,6 +177,28 @@ mod realmain {
         let options = Options {
             stdin_reader: Box::new(cursor),
         };
-        assert_eq!(expected, realmain(options, flags));
+        assert_eq!(expected, realmain(options, flags).unwrap());
+    }
+
+    #[test]
+    fn stdin_error() {
+        use std::io::{Error, ErrorKind};
+        struct ErrorReader;
+        impl Read for ErrorReader {
+            fn read(&mut self, _buf: &mut [u8]) -> std::io::Result<usize> {
+                Err(Error::new(ErrorKind::Other, "mock stdin error"))
+            }
+        }
+
+        let flags = Flags {
+            paths: None,
+            skip: None,
+        };
+        let options = Options {
+            stdin_reader: Box::new(ErrorReader),
+        };
+        let result = realmain(options, flags);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().to_string(), "mock stdin error");
     }
 }
