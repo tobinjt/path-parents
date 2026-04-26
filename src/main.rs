@@ -119,7 +119,7 @@ mod parents_of_filename {
     #[test]
     fn skip_larger_than_path_length() {
         let expected: Vec<String> = vec![];
-        assert_eq!(expected, parents_of_filename("/usr/bin/cat", 10));
+        assert_eq!(expected, parents_of_filename(Path::new("/usr/bin/cat"), 10));
     }
 }
 
@@ -182,7 +182,7 @@ mod realmain {
 
     #[test]
     fn stdin_error() {
-        use std::io::{Error, ErrorKind};
+        use std::io::{Error, ErrorKind, Read};
         struct ErrorReader;
         impl Read for ErrorReader {
             fn read(&mut self, _buf: &mut [u8]) -> std::io::Result<usize> {
