@@ -125,7 +125,7 @@ mod parents_of_filename {
     #[test]
     fn empty_filename() {
         let expected: Vec<String> = vec![];
-        assert_eq!(expected, parents_of_filename("", 0));
+        assert_eq!(expected, parents_of_filename(Path::new(""), 0));
     }
 }
 
