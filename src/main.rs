@@ -51,12 +51,12 @@ fn parents_of_filename(filename: &Path, skip: usize) -> Vec<String> {
     result
 }
 
-fn realmain(options: Options, flags: Flags) -> Result<String, std::io::Error> {
+fn realmain(options: Options, flags: Flags) -> std::io::Result<String> {
     let skip = flags.skip.unwrap_or_default();
     let paths = match flags.paths {
         None => BufReader::new(options.stdin_reader)
             .lines()
-            .collect::<Result<Vec<String>, std::io::Error>>()?,
+            .collect::<std::io::Result<Vec<String>>>()?,
         Some(paths) => paths,
     };
     Ok(paths
