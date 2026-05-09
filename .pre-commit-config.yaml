@@ -18,6 +18,7 @@ repos:
             "--fail-uncovered-lines=4",
             "--fail-uncovered-functions=1",
             "--quiet",
+            "--show-missing-lines",
           ]
       - id: cargo-test
   - repo: meta
