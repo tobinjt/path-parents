@@ -1,5 +1,16 @@
 # path-parents
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Basic usage](#basic-usage)
+  - [More typical usage](#more-typical-usage)
+- [Licence](#licence)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 `path-parents` prints all the parents of each path given, optionally skipping
 parents up to the length specified by `--skip`.
 
